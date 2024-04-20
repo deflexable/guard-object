@@ -89,4 +89,8 @@ export interface GuardSignal extends FootPrintSignal<Symbol> { };
 export interface Validator extends FootPrintSignal<executor> { }
 
 export function guardArray(footprint: FootPrint): ArrayFootPrint;
-export function guardObject(footprint: FootPrint, object: GuardedObject): void;
+
+interface ValidateObject {
+    validate: (object: GuardedObject) => void;
+}
+export function guardObject(footprint: FootPrint): void;

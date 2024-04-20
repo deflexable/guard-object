@@ -407,4 +407,6 @@ class ArrayFootPrint {
 
 exports.Validator = Validator;
 exports.guardArray = (footprint) => new ArrayFootPrint(footprint);
-exports.guardObject = (footprint, obj) => validateFootPrint(footprint, obj);
+exports.guardObject = (footprint) => ({
+    validate: obj => validateFootPrint(footprint, obj)
+});

@@ -71,7 +71,7 @@ interface FootPrintSignal<PassValue> {
     }
 }
 
-declare type executor = () => boolean;
+declare type executor = (testCase: any) => boolean;
 
 interface FootPrintObject {
     [key: string]: FootPrint;
@@ -81,16 +81,23 @@ type CustomValidator = () => boolean;
 type FootPrint = Symbol | CustomValidator | string | number | ArrayFootPrint | FootPrint[] | FootPrintObject;
 type GuardedObject = any;
 
-class ArrayFootPrint {
-    constructor(footprint: FootPrint): void;
+declare class ArrayFootPrint {
+    constructor(footprint: FootPrint);
 }
 
-export interface GuardSignal extends FootPrintSignal<Symbol> { };
-export interface Validator extends FootPrintSignal<executor> { }
+interface GuardSignalX extends FootPrintSignal<Symbol> { }
+interface ValidatorX extends FootPrintSignal<executor> { }
 
+export const GuardSignal: GuardSignalX;
+export const Validator: ValidatorX;
 export function guardArray(footprint: FootPrint): ArrayFootPrint;
 
 interface ValidateObject {
-    validate: (object: GuardedObject) => void;
+    /**
+     * 
+     * @param object object to validate from the provided footprint schema
+     * @returns true if the object was valid or throw an error if it wasn't
+     */
+    validate: (object: GuardedObject) => true;
 }
-export function guardObject(footprint: FootPrint): void;
+export function guardObject(footprint: FootPrint): ValidateObject;

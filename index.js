@@ -371,8 +371,11 @@ const validateFootPrint = (footprint, obj, lastPath = []) => {
     if (isObject(footprint)) {
         if (!isObject(obj)) throw guardError;
         Object.entries(footprint).forEach(([node, value]) => {
-            if (value !== undefined && !([node] in obj))
-                throw `missing field:"${[...lastPath, node].join('.')}"`;
+            if (
+                value !== undefined &&
+                !([node] in obj) &&
+                (typeof value === 'function' ? !value() : true)
+            ) throw `missing field:"${[...lastPath, node].join('.')}"`;
         });
         Object.entries(obj).forEach(([node, value]) => {
             validateFootPrint(footprint[node], value, [...lastPath, node]);
@@ -405,8 +408,14 @@ class ArrayFootPrint {
     }
 }
 
-exports.Validator = Validator;
+module.exports = {
+    Validator,
+    GuardSignal
+};
 exports.guardArray = (footprint) => new ArrayFootPrint(footprint);
 exports.guardObject = (footprint) => ({
-    validate: obj => validateFootPrint(footprint, obj)
+    validate: obj => {
+        validateFootPrint(footprint, obj);
+        return true;
+    }
 });

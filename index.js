@@ -410,12 +410,12 @@ class ArrayFootPrint {
 
 module.exports = {
     Validator,
-    GuardSignal
+    GuardSignal,
+    guardArray: (footprint) => new ArrayFootPrint(footprint),
+    guardObject: (footprint) => ({
+        validate: obj => {
+            validateFootPrint(footprint, obj);
+            return true;
+        }
+    })
 };
-exports.guardArray = (footprint) => new ArrayFootPrint(footprint);
-exports.guardObject = (footprint) => ({
-    validate: obj => {
-        validateFootPrint(footprint, obj);
-        return true;
-    }
-});

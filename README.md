@@ -4,10 +4,10 @@ Quickly validate your object scheme without breaking a sweat
 
 # Key Advantages
 
-- Superfast (an error is thrown when a testCase doesn't match the footprint instead of scanning through the entire object)
-- Zero Dependency
-- Flexible
-- Validate deep nested objects and arrays
+- ⚡️ Superfast (an error is thrown by default when a testCase doesn't match the footprint instead of scanning through the entire testCase)
+- 🏋️ Zero Dependency
+- 🤸‍♂️ Flexible
+- 💪 Validate deep nested objects and arrays
 
 ## Installation
 
@@ -31,7 +31,7 @@ yarn add guard-object
 import { guardObject, GuardSignal } from 'guard-object';
 
 const schema = guardObject({
-    // provide custom validation
+    // provide a function for custom validation
     username: value => typeof value === 'string' && value.length < 30,
     // must be a string
     password: GuardSignal.STRING,
@@ -89,14 +89,14 @@ all validators are expose so you can reuse them on the fly
 ```js
 import { Validator } from 'guard-object';
 
-Validator.EMAIL('hello@brainbehind.com'); // true
+Validator.EMAIL('hello@brainbehindx.com'); // true
 
 Validator.CARDS.VISA('3748 8282 9283 2939'); // false
 ```
 
 ## dynamic array
-to retain flexibility in validating data, guard-object validate it testCase in a literal way.
-so the following applies
+to retain the flexibility in validating testCase, guard-object validate it testCase in a literal way.
+Therefore, the following applies
 
 ```js
 import { guardObject, GuardSignal } from 'guard-object';
@@ -109,7 +109,7 @@ const scheme = guardObject({
     ]
 });
 
-// validation will pass as each item matches the footprint
+// validation will pass as each field item matches the footprint
 scheme.validate({
     history: [
         { profit: 259, date: '14-04-2024' },
@@ -163,5 +163,29 @@ scheme.validate({
 });
 ```
 
+## Entity validation
+you can also directly validate non-object like:
+
+```js
+import { guardObject, GuardSignal, guardArray } from 'guard-object';
+
+// validating number
+guardObject(GuardSignal.NUMBER).validate(57);
+
+// validating email
+guardObject(GuardSignal.EMAIL).validate('hello@brainbehindx.com');
+
+// validating dynamic array
+guardObject(guardArray({
+    name: GuardSignal.STRING,
+    age: GuardSignal.NUMBER
+})).validate([
+    { name: 'Albert Einstein', age: 76 },
+    { name: 'Jackie Chan', age: 85 }
+]);
+
+// e.t.c...
+```
+
 ## TODO
-- Option to enable throwing more refined error
+- Option to enable throwing more refine error

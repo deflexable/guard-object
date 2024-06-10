@@ -368,17 +368,10 @@ const stringifySymbol = (o) => typeof o === 'symbol' ? o.toString() : o;
 const validateFootPrint = (footprint, obj, lastPath = []) => {
     const guardError = `Unknown object:"${stringifySymbol(obj)}" of footprint:"${stringifySymbol(footprint)}" for field:"${lastPath.join('.')}"`;
 
-    if (isObject(footprint)) {
-        if (!isObject(obj)) throw guardError;
-        Object.entries(footprint).forEach(([node, value]) => {
-            if (
-                value !== undefined &&
-                !([node] in obj) &&
-                (typeof value === 'function' ? !value() : true)
-            ) throw `missing field:"${[...lastPath, node].join('.')}"`;
-        });
-        Object.entries(obj).forEach(([node, value]) => {
-            validateFootPrint(footprint[node], value, [...lastPath, node]);
+    if (footprint instanceof ArrayFootPrint) {
+        if (!Array.isArray(obj)) throw guardError;
+        obj.forEach((o, i) => {
+            validateFootPrint(footprint.footprint, o, [...lastPath, i]);
         });
     } else if (typeof footprint === 'function') {
         if (!footprint(obj)) throw guardError;
@@ -390,10 +383,17 @@ const validateFootPrint = (footprint, obj, lastPath = []) => {
         obj.forEach((o, i) => {
             validateFootPrint(footprint[i], o, [...lastPath, i]);
         });
-    } else if (footprint instanceof ArrayFootPrint) {
-        if (!Array.isArray(obj)) throw guardError;
-        obj.forEach((o, i) => {
-            validateFootPrint(footprint.footprint, o, [...lastPath, i]);
+    } else if (isObject(footprint)) {
+        if (!isObject(obj)) throw guardError;
+        Object.entries(footprint).forEach(([node, value]) => {
+            if (
+                value !== undefined &&
+                !([node] in obj) &&
+                (typeof value === 'function' ? !value() : true)
+            ) throw `missing field:"${[...lastPath, node].join('.')}"`;
+        });
+        Object.entries(obj).forEach(([node, value]) => {
+            validateFootPrint(footprint[node], value, [...lastPath, node]);
         });
     } else if (footprint !== obj && !guardExecutor[footprint]?.(obj)) throw guardError;
 }
@@ -408,14 +408,17 @@ class ArrayFootPrint {
     }
 }
 
+const guardArray = (footprint) => new ArrayFootPrint(footprint);
+const guardObject = (footprint) => ({
+    validate: obj => {
+        validateFootPrint(footprint, obj);
+        return true;
+    }
+});
+
 module.exports = {
     Validator,
     GuardSignal,
-    guardArray: (footprint) => new ArrayFootPrint(footprint),
-    guardObject: (footprint) => ({
-        validate: obj => {
-            validateFootPrint(footprint, obj);
-            return true;
-        }
-    })
+    guardArray,
+    guardObject
 };

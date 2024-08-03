@@ -3,6 +3,9 @@ const GuardSignal = Object.freeze({
     UNDEFINED: Symbol('UNDEFINED'),
     NULL: Symbol('NULL'),
     STRING: Symbol('STRING'),
+    EMPTY_STRING: Symbol('EMPTY_STRING'),
+    NON_EMPTY_STRING: Symbol('NON_EMPTY_STRING'),
+    TRIMMED_STRING: Symbol('TRIMMED_STRING'),
     BOOLEAN: Symbol('BOOLEAN'),
     ARRAY: Symbol('ARRAY'),
     REGEX: Symbol('REGEX'),
@@ -11,8 +14,10 @@ const GuardSignal = Object.freeze({
     INTEGER: Symbol('INTEGER'),
     NAN: Symbol('NAN'),
     WHOLE_NUMBER: Symbol('WHOLE_NUMBER'),
-    WHOLE_POSITIVE_NUMBER: Symbol('WHOLE_POSITIVE_NUMBER'),
-    WHOLE_NEGATIVE_NUMBER: Symbol('WHOLE_NEGATIVE_NUMBER'),
+    POSITIVE_NUMBER: Symbol('POSITIVE_NUMBER'),
+    NEGATIVE_NUMBER: Symbol('NEGATIVE_NUMBER'),
+    POSITIVE_WHOLE_NUMBER: Symbol('POSITIVE_WHOLE_NUMBER'),
+    NEGATIVE_WHOLE_NUMBER: Symbol('NEGATIVE_WHOLE_NUMBER'),
     DECIMAL: Symbol('DECIMAL'),
     POSITIVE_DECIMAL: Symbol('POSITIVE_DECIMAL'),
     NEGATIVE_DECIMAL: Symbol('NEGATIVE_DECIMAL'),
@@ -83,16 +88,21 @@ const guardExecutor = {
     [GuardSignal.NULL]: a => a === null,
     [GuardSignal.BOOLEAN]: a => typeof a === 'boolean',
     [GuardSignal.STRING]: a => typeof a === 'string',
+    [GuardSignal.TRIMMED_STRING]: a => typeof a === 'string' && !a.startsWith(' ') && !a.endsWith(' '),
+    [GuardSignal.EMPTY_STRING]: a => typeof a === 'string' && !a,
+    [GuardSignal.NON_EMPTY_STRING]: a => typeof a === 'string' && !!a,
     [GuardSignal.REGEX]: a => a instanceof RegExp,
     [GuardSignal.ARRAY]: a => Array.isArray(a),
     [GuardSignal.OBJECT]: a => isObject(a),
     [GuardSignal.NUMBER]: a => typeof a === 'number' && !isNaN(a) && Number.isFinite(a),
     [GuardSignal.INTEGER]: a => Number.isInteger(a),
     [GuardSignal.NAN]: a => isNaN(a),
-    [GuardSignal.WHOLE_NUMBER]: a => Number.isInteger(a),
-    [GuardSignal.WHOLE_POSITIVE_NUMBER]: a => guardExecutor[GuardSignal.WHOLE_NUMBER](a) && a >= 0,
-    [GuardSignal.WHOLE_NEGATIVE_NUMBER]: a => guardExecutor[GuardSignal.WHOLE_NUMBER](a) && a < 0,
-    [GuardSignal.DECIMAL]: a => typeof a === 'number' && !isNaN(a) && Number.isFinite(a),
+    [GuardSignal.POSITIVE_NUMBER]: a => guardExecutor[GuardSignal.NUMBER](a) && a >= 0,
+    [GuardSignal.NEGATIVE_NUMBER]: a => guardExecutor[GuardSignal.NUMBER](a) && a < 0,
+    [GuardSignal.WHOLE_NUMBER]: a => guardExecutor[GuardSignal.NUMBER](a) && !guardExecutor[GuardSignal.INTEGER](a),
+    [GuardSignal.POSITIVE_WHOLE_NUMBER]: a => guardExecutor[GuardSignal.WHOLE_NUMBER](a) && a >= 0,
+    [GuardSignal.NEGATIVE_WHOLE_NUMBER]: a => guardExecutor[GuardSignal.WHOLE_NUMBER](a) && a < 0,
+    [GuardSignal.DECIMAL]: a => guardExecutor[GuardSignal.INTEGER](a),
     [GuardSignal.POSITIVE_DECIMAL]: a => guardExecutor[GuardSignal.DECIMAL](a) && a >= 0,
     [GuardSignal.NEGATIVE_DECIMAL]: a => guardExecutor[GuardSignal.DECIMAL](a) && a < 0,
     [GuardSignal.LINK]: a => /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig.test(a),
@@ -102,7 +112,7 @@ const guardExecutor = {
     [GuardSignal.EMAIL]: a => (
         typeof a === 'string' &&
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(a) &&
-        a.trim().length <= 1000
+        a.length <= 320
     ),
     [GuardSignal.PHONE]: a => {
         if (typeof a !== 'string') return false;
@@ -240,7 +250,7 @@ const guardExecutor = {
     [GuardSignal.FULLNAME]: a => typeof a === 'string' &&
         a.trim().split(' ').length === 2 &&
         a.trim().split(' ').filter(v => v).length === 2 &&
-        a.trim().length <= 500,
+        a.trim().length <= 300,
     [GuardSignal.DATES.ALL]: a => {
         const date = new Date(a);
         return !isNaN(date) && date.toString() !== 'Invalid Date';
@@ -383,6 +393,8 @@ const validateFootPrint = (footprint, obj, lastPath = []) => {
         obj.forEach((o, i) => {
             validateFootPrint(footprint[i], o, [...lastPath, i]);
         });
+    } else if (footprint instanceof RegExp) {
+        if (!footprint.test(obj)) throw guardError;
     } else if (isObject(footprint)) {
         if (!isObject(obj)) throw guardError;
         Object.entries(footprint).forEach(([node, value]) => {
@@ -416,9 +428,19 @@ const guardObject = (footprint) => ({
     }
 });
 
+const niceGuard = (footprint, testCase) => {
+    try {
+        guardObject(footprint).validate(testCase);
+        return true
+    } catch (error) {
+        return false;
+    }
+}
+
 module.exports = {
     Validator,
     GuardSignal,
     guardArray,
-    guardObject
+    guardObject,
+    niceGuard
 };

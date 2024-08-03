@@ -4,6 +4,9 @@ interface FootPrintSignal<PassValue> {
     UNDEFINED: PassValue;
     NULL: PassValue;
     STRING: PassValue;
+    TRIMMED_STRING: PassValue;
+    EMPTY_STRING: PassValue;
+    NON_EMPTY_STRING: PassValue;
     BOOLEAN: PassValue;
     ARRAY: PassValue;
     REGEX: PassValue;
@@ -11,9 +14,11 @@ interface FootPrintSignal<PassValue> {
     NUMBER: PassValue;
     INTEGER: PassValue;
     NAN: PassValue;
+    POSITIVE_NUMBER: PassValue;
+    NEGATIVE_NUMBER: PassValue;
     WHOLE_NUMBER: PassValue;
-    WHOLE_POSITIVE_NUMBER: PassValue;
-    WHOLE_NEGATIVE_NUMBER: PassValue;
+    POSITIVE_WHOLE_NUMBER: PassValue;
+    NEGATIVE_WHOLE_NUMBER: PassValue;
     DECIMAL: PassValue;
     POSITIVE_DECIMAL: PassValue;
     NEGATIVE_DECIMAL: PassValue;
@@ -78,7 +83,7 @@ interface FootPrintObject {
 }
 
 type CustomValidator = () => boolean;
-type FootPrint = Symbol | CustomValidator | string | number | ArrayFootPrint | FootPrint[] | FootPrintObject;
+type FootPrint = Symbol | CustomValidator | string | RegExp | number | ArrayFootPrint | FootPrint[] | FootPrintObject;
 type GuardedObject = any;
 
 declare class ArrayFootPrint {
@@ -101,3 +106,4 @@ interface ValidateObject {
     validate: (object: GuardedObject) => true;
 }
 export function guardObject(footprint: FootPrint): ValidateObject;
+export function niceGuard(footprint: FootPrint, object: GuardedObject): boolean;

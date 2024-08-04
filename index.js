@@ -10,6 +10,8 @@ const GuardSignal = Object.freeze({
     ARRAY: Symbol('ARRAY'),
     REGEX: Symbol('REGEX'),
     OBJECT: Symbol('OBJECT'),
+    JSON: Symbol('JSON'),
+    TIMESTAMP: Symbol('TIMESTAMP'),
     NUMBER: Symbol('NUMBER'),
     INTEGER: Symbol('INTEGER'),
     NAN: Symbol('NAN'),
@@ -83,6 +85,8 @@ const validateYY_MM_DD = ([year, month, day]) => {
 
 const stripCreditCard = (a) => a.split(' ').join('').split('-').join('');
 
+const Max64BitSignedInteger = BigInt(2) ** BigInt(63) - BigInt(1);
+
 const guardExecutor = {
     [GuardSignal.UNDEFINED]: a => a === undefined,
     [GuardSignal.NULL]: a => a === null,
@@ -94,6 +98,10 @@ const guardExecutor = {
     [GuardSignal.REGEX]: a => a instanceof RegExp,
     [GuardSignal.ARRAY]: a => Array.isArray(a),
     [GuardSignal.OBJECT]: a => isObject(a),
+    [GuardSignal.JSON]: a => isObject(a) || Array.isArray(a),
+    [GuardSignal.TIMESTAMP]: a => guardExecutor[GuardSignal.POSITIVE_WHOLE_NUMBER](a) &&
+        !Number.isInteger(a) &&
+        a <= Max64BitSignedInteger,
     [GuardSignal.NUMBER]: a => typeof a === 'number' && !isNaN(a) && Number.isFinite(a),
     [GuardSignal.INTEGER]: a => Number.isInteger(a),
     [GuardSignal.NAN]: a => isNaN(a),
@@ -375,23 +383,23 @@ spreadValidator(GuardSignal);
 
 const stringifySymbol = (o) => typeof o === 'symbol' ? o.toString() : o;
 
-const validateFootPrint = (footprint, obj, lastPath = []) => {
+const validateFootPrint = (footprint, obj, lastPath = [], parent) => {
     const guardError = `Unknown object:"${stringifySymbol(obj)}" of footprint:"${stringifySymbol(footprint)}" for field:"${lastPath.join('.')}"`;
 
     if (footprint instanceof ArrayFootPrint) {
         if (!Array.isArray(obj)) throw guardError;
         obj.forEach((o, i) => {
-            validateFootPrint(footprint.footprint, o, [...lastPath, i]);
+            validateFootPrint(footprint.footprint, o, [...lastPath, i], obj);
         });
     } else if (typeof footprint === 'function') {
-        if (!footprint(obj)) throw guardError;
+        if (!footprint(obj, parent)) throw guardError;
     } else if (Array.isArray(footprint)) {
         if (
             !Array.isArray(obj) ||
             obj.length !== footprint.length
         ) throw guardError;
         obj.forEach((o, i) => {
-            validateFootPrint(footprint[i], o, [...lastPath, i]);
+            validateFootPrint(footprint[i], o, [...lastPath, i], obj);
         });
     } else if (footprint instanceof RegExp) {
         if (!footprint.test(obj)) throw guardError;
@@ -405,7 +413,7 @@ const validateFootPrint = (footprint, obj, lastPath = []) => {
             ) throw `missing field:"${[...lastPath, node].join('.')}"`;
         });
         Object.entries(obj).forEach(([node, value]) => {
-            validateFootPrint(footprint[node], value, [...lastPath, node]);
+            validateFootPrint(footprint[node], value, [...lastPath, node], obj);
         });
     } else if (footprint !== obj && !guardExecutor[footprint]?.(obj)) throw guardError;
 }

@@ -11,6 +11,8 @@ interface FootPrintSignal<PassValue> {
     ARRAY: PassValue;
     REGEX: PassValue;
     OBJECT: PassValue;
+    JSON: PassValue;
+    TIMESTAMP: PassValue;
     NUMBER: PassValue;
     INTEGER: PassValue;
     NAN: PassValue;

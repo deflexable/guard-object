@@ -100,7 +100,6 @@ const guardExecutor = {
     [GuardSignal.OBJECT]: a => isObject(a),
     [GuardSignal.JSON]: a => isObject(a) || Array.isArray(a),
     [GuardSignal.TIMESTAMP]: a => guardExecutor[GuardSignal.POSITIVE_WHOLE_NUMBER](a) &&
-        !Number.isInteger(a) &&
         a <= Max64BitSignedInteger,
     [GuardSignal.NUMBER]: a => typeof a === 'number' && !isNaN(a) && Number.isFinite(a),
     [GuardSignal.INTEGER]: a => Number.isInteger(a),

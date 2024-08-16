@@ -5,6 +5,7 @@ interface FootPrintSignal<PassValue> {
     NULL: PassValue;
     STRING: PassValue;
     TRIMMED_STRING: PassValue;
+    TRIMMED_NON_EMPTY_STRING: PassValue;
     EMPTY_STRING: PassValue;
     NON_EMPTY_STRING: PassValue;
     BOOLEAN: PassValue;
@@ -19,8 +20,8 @@ interface FootPrintSignal<PassValue> {
     POSITIVE_NUMBER: PassValue;
     NEGATIVE_NUMBER: PassValue;
     WHOLE_NUMBER: PassValue;
-    POSITIVE_WHOLE_NUMBER: PassValue;
-    NEGATIVE_WHOLE_NUMBER: PassValue;
+    POSITIVE_INTEGER: PassValue;
+    NEGATIVE_INTEGER: PassValue;
     DECIMAL: PassValue;
     POSITIVE_DECIMAL: PassValue;
     NEGATIVE_DECIMAL: PassValue;

@@ -382,7 +382,9 @@ const spreadValidator = (obj, write) => {
 
 spreadValidator(GuardSignal);
 
-const stringifySymbol = (o) => typeof o === 'symbol' ? o.toString() : o;
+const stringifySymbol = (o) => typeof o === 'symbol' ? o.toString()
+    : Validator.JSON(o) ? JSON.stringify(o)
+        : o;
 
 const validateFootPrint = (footprint, obj, lastPath = [], parent) => {
     const guardError = `Unknown object:"${stringifySymbol(obj)}" of footprint:"${stringifySymbol(footprint)}" for field:"${lastPath.join('.')}"`;
@@ -410,7 +412,7 @@ const validateFootPrint = (footprint, obj, lastPath = [], parent) => {
             if (
                 value !== undefined &&
                 !([node] in obj) &&
-                (typeof value === 'function' ? !value() : true)
+                (typeof value === 'function' ? !value(undefined, obj) : true)
             ) throw `missing field:"${[...lastPath, node].join('.')}"`;
         });
         Object.entries(obj).forEach(([node, value]) => {

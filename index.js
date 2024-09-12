@@ -386,23 +386,23 @@ const stringifySymbol = (o) => typeof o === 'symbol' ? o.toString()
     : Validator.JSON(o) ? JSON.stringify(o)
         : o;
 
-const validateFootPrint = (footprint, obj, lastPath = [], parent) => {
+const validateFootPrint = (footprint, obj, lastPath = [], parent, thisIndex) => {
     const guardError = `Unknown object:"${stringifySymbol(obj)}" of footprint:"${stringifySymbol(footprint)}" for field:"${lastPath.join('.')}"`;
 
     if (footprint instanceof ArrayFootPrint) {
         if (!Array.isArray(obj)) throw guardError;
         obj.forEach((o, i) => {
-            validateFootPrint(footprint.footprint, o, [...lastPath, i], obj);
+            validateFootPrint(footprint.footprint, o, [...lastPath, i], obj, i);
         });
     } else if (typeof footprint === 'function') {
-        if (!footprint(obj, parent)) throw guardError;
+        if (!footprint(obj, parent, thisIndex)) throw guardError;
     } else if (Array.isArray(footprint)) {
         if (
             !Array.isArray(obj) ||
             obj.length !== footprint.length
         ) throw guardError;
         obj.forEach((o, i) => {
-            validateFootPrint(footprint[i], o, [...lastPath, i], obj);
+            validateFootPrint(footprint[i], o, [...lastPath, i], obj, i);
         });
     } else if (footprint instanceof RegExp) {
         if (!footprint.test(obj)) throw guardError;
@@ -416,7 +416,7 @@ const validateFootPrint = (footprint, obj, lastPath = [], parent) => {
             ) throw `missing field:"${[...lastPath, node].join('.')}"`;
         });
         Object.entries(obj).forEach(([node, value]) => {
-            validateFootPrint(footprint[node], value, [...lastPath, node], obj);
+            validateFootPrint(footprint[node], value, [...lastPath, node], obj, thisIndex);
         });
     } else if (footprint !== obj && !guardExecutor[footprint]?.(obj)) throw guardError;
 }

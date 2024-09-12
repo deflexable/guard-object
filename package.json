@@ -1,6 +1,6 @@
 {
   "name": "guard-object",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Quickly validate your object scheme without breaking a sweat",
   "main": "index.js",
   "scripts": {

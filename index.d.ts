@@ -85,7 +85,7 @@ interface FootPrintObject {
     [key: string]: FootPrint;
 }
 
-type CustomValidator = (testCase: any, testCaseParent?: any) => boolean;
+type CustomValidator = (testCase: any, testCaseParent?: any, nearestArrayIndex?: number | undefined) => boolean;
 type FootPrint = Symbol | CustomValidator | string | RegExp | number | ArrayFootPrint | FootPrint[] | FootPrintObject;
 type GuardedObject = any;
 

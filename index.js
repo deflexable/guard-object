@@ -86,8 +86,6 @@ const validateYY_MM_DD = ([year, month, day]) => {
 
 const stripCreditCard = (a) => a.split(' ').join('').split('-').join('');
 
-const Max64BitSignedInteger = BigInt(2) ** BigInt(63) - BigInt(1);
-
 const guardExecutor = {
     [GuardSignal.UNDEFINED]: a => a === undefined,
     [GuardSignal.NULL]: a => a === null,
@@ -102,7 +100,7 @@ const guardExecutor = {
     [GuardSignal.OBJECT]: a => isObject(a),
     [GuardSignal.JSON]: a => isObject(a) || Array.isArray(a),
     [GuardSignal.TIMESTAMP]: a => guardExecutor[GuardSignal.POSITIVE_INTEGER](a) &&
-        a <= Max64BitSignedInteger,
+        new Date(a).toString() !== 'Invalid Date',
     [GuardSignal.NUMBER]: a => typeof a === 'number' && !isNaN(a) && Number.isFinite(a),
     [GuardSignal.INTEGER]: a => Number.isInteger(a),
     [GuardSignal.NAN]: a => isNaN(a),

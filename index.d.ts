@@ -89,8 +89,26 @@ type CustomValidator = (testCase: any, testCaseParent?: any, nearestArrayIndex?:
 type FootPrint = Symbol | CustomValidator | string | RegExp | number | ArrayFootPrint | FootPrint[] | FootPrintObject;
 type GuardedObject = any;
 
+interface GuardParams {
+    location: string[];
+    description: string;
+    footprint: FootPrint;
+    value: any;
+}
+
 declare class ArrayFootPrint {
     constructor(footprint: FootPrint);
+}
+
+export class GuardError {
+    constructor(params: GuardParams);
+
+    // match(footprint) {
+    //     // TODO:
+    // }
+    getDescription(): string;
+    toString(): string;
+    toJSON(): string;
 }
 
 interface GuardSignalX extends FootPrintSignal<Symbol> { }
@@ -98,7 +116,18 @@ interface ValidatorX extends FootPrintSignal<executor> { }
 
 export const GuardSignal: GuardSignalX;
 export const Validator: ValidatorX;
+/**
+ * represents a footprint against an array
+ * 
+ * @param footprint the footprint to validate against
+ */
 export function guardArray(footprint: FootPrint): ArrayFootPrint;
+/**
+ * represents a footprint against a non-empty array
+ * 
+ * @param footprint the footprint to validate against
+ */
+export function guardFilledArray(footprint: FootPrint): ArrayFootPrint;
 
 interface ValidateObject {
     /**
@@ -108,5 +137,22 @@ interface ValidateObject {
      */
     validate: (object: GuardedObject) => true;
 }
+
+/**
+ * validate a footprint against an object.
+ * throws an error if a value doesn't match it's respective footprint
+ * 
+ * @param footprint the footprint to validate against
+ * 
+ * @throws {GuardError}
+ */
 export function guardObject(footprint: FootPrint): ValidateObject;
+/**
+ * validate a footprint against an object and gather all errors before throwing
+ * 
+ * @param footprint the footprint to validate against
+ * 
+ * @throws {GuardError[]}
+ */
+export function guardAllObject(footprint: FootPrint): ValidateObject;
 export function niceGuard(footprint: FootPrint, object: GuardedObject): boolean;

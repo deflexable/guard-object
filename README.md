@@ -191,7 +191,3 @@ guardObject(
 
 // e.t.c...
 ```
-
-## TODO
-
-- Option to enable throwing more refine error

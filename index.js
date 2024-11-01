@@ -366,17 +366,19 @@ const guardExecutor = {
     }
 };
 
-const Validator = {};
+const PreValidator = {};
 
 const spreadValidator = (obj, write) => {
     Object.entries(obj).forEach(([k, v]) => {
         if (isObject(v)) {
-            spreadValidator(v, (write || Validator)[k] = {});
+            spreadValidator(v, (write || PreValidator)[k] = {});
         } else if (typeof v === 'symbol') {
-            (write || Validator)[k] = guardExecutor[v];
+            (write || PreValidator)[k] = guardExecutor[v];
         } else throw `unexpected value:"${v}" at "${k}"`;
     });
-}
+};
+
+const Validator = Object.freeze(PreValidator);
 
 spreadValidator(GuardSignal);
 
@@ -384,28 +386,86 @@ const stringifySymbol = (o) => typeof o === 'symbol' ? o.toString()
     : Validator.JSON(o) ? JSON.stringify(o)
         : o;
 
-const validateFootPrint = (footprint, obj, lastPath = [], parent, thisIndex) => {
-    const guardError = `Unknown object:"${stringifySymbol(obj)}" of footprint:"${stringifySymbol(footprint)}" for field:"${lastPath.join('.')}"`;
+const validateFootPrint = ({
+    footprint,
+    obj,
+    lastPath = [],
+    parent,
+    parentIndex: thisIndex,
+    parallel,
+    errorChains,
+    ancestorData
+}) => {
+    const initial = !errorChains;
+    if (initial) {
+        errorChains = [];
+        ancestorData = [footprint, obj];
+    }
+    const locationName = lastPath.join('.');
+
+    const updateErrorSignal = (error) => {
+        const errorSignal = new GuardError({
+            location: lastPath,
+            description: `Invalid object:"${stringifySymbol(obj)}" for footprint:"${stringifySymbol(footprint)}" at field:"${locationName}"`,
+            error: error || (locationName ? `unable to validate field at "${locationName}" with value of "${stringifySymbol(obj)}"` : 'unable to validate value'),
+            footprint: ancestorData[0],
+            value: ancestorData[1]
+        });
+
+        if (parallel) {
+            errorChains.push(errorSignal);
+        } else throw errorSignal;
+    };
 
     if (footprint instanceof ArrayFootPrint) {
-        if (!Array.isArray(obj)) throw guardError;
-        obj.forEach((o, i) => {
-            validateFootPrint(footprint.footprint, o, [...lastPath, i], obj, i);
-        });
+        if (Array.isArray(obj)) {
+            obj.forEach((o, i) => {
+                validateFootPrint({
+                    footprint: footprint.footprint,
+                    obj: o,
+                    lastPath: [...lastPath, i],
+                    parent: obj,
+                    parentIndex: i,
+                    parallel,
+                    errorChains
+                });
+            });
+            if (!obj.length && footprint.filled) {
+                updateErrorSignal(`got an empty array${locationName ? ' at "' + locationName + '"' : ''}`);
+            }
+        } else updateErrorSignal(`expected an array${locationName ? ' at "' + locationName + '"' : ''} but got "${stringifySymbol(obj)}"`);
     } else if (typeof footprint === 'function') {
-        if (!footprint(obj, parent, thisIndex)) throw guardError;
+        if (!footprint(obj, parent, thisIndex)) {
+            updateErrorSignal();
+        }
     } else if (Array.isArray(footprint)) {
-        if (
-            !Array.isArray(obj) ||
-            obj.length !== footprint.length
-        ) throw guardError;
+        if (!Array.isArray(obj)) {
+            updateErrorSignal(`expected an array${locationName ? ' at "' + locationName + '"' : ''} but got "${stringifySymbol(obj)}"`);
+            return;
+        } else if (obj.length !== footprint.length) {
+            const s1 = footprint.length > 1 ? 's' : '';
+            const s2 = ob.length > 1 ? 's' : '';
+            updateErrorSignal(`expected an array with ${footprint.length} item${s1} but instead got an array with ${obj.length} item${s2}`);
+            return;
+        }
         obj.forEach((o, i) => {
-            validateFootPrint(footprint[i], o, [...lastPath, i], obj, i);
+            validateFootPrint({
+                footprint: footprint[i],
+                obj: o,
+                lastPath: [...lastPath, i],
+                parent: obj,
+                parentIndex: i,
+                parallel,
+                errorChains
+            });
         });
     } else if (footprint instanceof RegExp) {
-        if (!footprint.test(obj)) throw guardError;
+        if (!footprint.test(obj)) updateErrorSignal();
     } else if (isObject(footprint)) {
-        if (!isObject(obj)) throw guardError;
+        if (!isObject(obj)) {
+            updateErrorSignal(`expected an object${locationName ? ' at "' + locationName + '"' : ''} but got "${stringifySymbol(obj)}"`);
+            return;
+        }
         Object.entries(footprint).forEach(([node, value]) => {
             if (
                 value !== undefined &&
@@ -414,25 +474,62 @@ const validateFootPrint = (footprint, obj, lastPath = [], parent, thisIndex) => 
             ) throw `missing field:"${[...lastPath, node].join('.')}"`;
         });
         Object.entries(obj).forEach(([node, value]) => {
-            validateFootPrint(footprint[node], value, [...lastPath, node], obj, thisIndex);
+            validateFootPrint({
+                footprint: footprint[node],
+                obj: value,
+                lastPath: [...lastPath, node],
+                parent: obj,
+                parentIndex: thisIndex,
+                parallel,
+                errorChains
+            });
         });
-    } else if (footprint !== obj && !guardExecutor[footprint]?.(obj)) throw guardError;
-}
+    } else if (footprint !== obj && !guardExecutor[footprint]?.(obj))
+        updateErrorSignal();
 
-function isObject(o) {
-    return Object.prototype.toString.call(o) === '[object Object]';
-}
-
-class ArrayFootPrint {
-    constructor(footprint) {
-        this.footprint = footprint;
+    if (parallel && initial && errorChains.length) {
+        throw errorChains;
     }
 }
 
+function isObject(o) {
+    if (typeof o !== 'object' || o === null) return false;
+    return Object.prototype.toString.call(o) === '[object Object]'
+        && Object.getPrototypeOf(o) === Object.prototype;
+}
+
+class ArrayFootPrint {
+    constructor(footprint, filled) {
+        this.footprint = footprint;
+        this.filled = filled;
+    }
+}
+
+class GuardError {
+    constructor(params) {
+        this.args = params;
+    }
+
+    match(footprint) {
+        // TODO:
+    }
+    getDescription = () => this.args.description;
+    toString = () => this.args.error;
+    toJSON = () => this.toString();
+}
+
 const guardArray = (footprint) => new ArrayFootPrint(footprint);
+const guardFilledArray = (footprint) => new ArrayFootPrint(footprint, true);
 const guardObject = (footprint) => ({
     validate: obj => {
-        validateFootPrint(footprint, obj);
+        validateFootPrint({ footprint, obj });
+        return true;
+    }
+});
+
+const guardAllObject = () => ({
+    validate: obj => {
+        validateFootPrint({ footprint, obj, parallel: true });
         return true;
     }
 });
@@ -444,11 +541,14 @@ const niceGuard = (footprint, testCase) => {
     } catch (error) {
         return false;
     }
-}
+};
 
 module.exports = {
     Validator,
     GuardSignal,
+    GuardError,
+    guardAllObject,
+    guardFilledArray,
     guardArray,
     guardObject,
     niceGuard

@@ -92,7 +92,7 @@ const guardExecutor = {
     [GuardSignal.BOOLEAN]: a => typeof a === 'boolean',
     [GuardSignal.STRING]: a => typeof a === 'string',
     [GuardSignal.TRIMMED_STRING]: a => typeof a === 'string' && !a.startsWith(' ') && !a.endsWith(' '),
-    [GuardSignal.TRIMMED_NON_EMPTY_STRING]: a => typeof a === 'string' && !a.startsWith(' ') && !a.endsWith(' ') && a,
+    [GuardSignal.TRIMMED_NON_EMPTY_STRING]: a => typeof a === 'string' && !a.startsWith(' ') && !a.endsWith(' ') && !!a,
     [GuardSignal.EMPTY_STRING]: a => typeof a === 'string' && !a,
     [GuardSignal.NON_EMPTY_STRING]: a => typeof a === 'string' && !!a,
     [GuardSignal.REGEX]: a => a instanceof RegExp,
@@ -378,9 +378,9 @@ const spreadValidator = (obj, write) => {
     });
 };
 
-const Validator = Object.freeze(PreValidator);
-
 spreadValidator(GuardSignal);
+
+const Validator = Object.freeze(PreValidator);
 
 const stringifySymbol = (o) => typeof o === 'symbol' ? o.toString()
     : Validator.JSON(o) ? JSON.stringify(o)
@@ -427,7 +427,8 @@ const validateFootPrint = ({
                     parent: obj,
                     parentIndex: i,
                     parallel,
-                    errorChains
+                    errorChains,
+                    ancestorData
                 });
             });
             if (!obj.length && footprint.filled) {
@@ -456,7 +457,8 @@ const validateFootPrint = ({
                 parent: obj,
                 parentIndex: i,
                 parallel,
-                errorChains
+                errorChains,
+                ancestorData
             });
         });
     } else if (footprint instanceof RegExp) {
@@ -481,7 +483,8 @@ const validateFootPrint = ({
                 parent: obj,
                 parentIndex: thisIndex,
                 parallel,
-                errorChains
+                errorChains,
+                ancestorData
             });
         });
     } else if (footprint !== obj && !guardExecutor[footprint]?.(obj))

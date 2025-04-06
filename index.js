@@ -112,10 +112,10 @@ const guardExecutor = {
     [GuardSignal.DECIMAL]: a => guardExecutor[GuardSignal.NUMBER](a) && !Number.isInteger(a),
     [GuardSignal.POSITIVE_DECIMAL]: a => guardExecutor[GuardSignal.DECIMAL](a) && a >= 0,
     [GuardSignal.NEGATIVE_DECIMAL]: a => guardExecutor[GuardSignal.DECIMAL](a) && a < 0,
-    [GuardSignal.LINK]: a => /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig.test(a),
-    [GuardSignal.HTTPS]: a => /(\b(https):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig.test(a),
-    [GuardSignal.HTTP]: a => /(\b(http):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig.test(a),
-    [GuardSignal.FTP]: a => /(\b(ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig.test(a),
+    [GuardSignal.LINK]: a => /^(https?|ftp):\/\/(localhost|(\d{1,3}\.){3}\d{1,3}|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(:\d+)?(\/[^\s]*)?$/.test(a),
+    [GuardSignal.HTTPS]: a => /^(https:\/\/)(localhost|(\d{1,3}\.){3}\d{1,3}|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(:\d+)?(\/[^\s]*)?$/.test(a),
+    [GuardSignal.HTTP]: a => /^(http:\/\/)(localhost|(\d{1,3}\.){3}\d{1,3}|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(:\d+)?(\/[^\s]*)?$/.test(a),
+    [GuardSignal.FTP]: a => /^(ftp:\/\/)(localhost|(\d{1,3}\.){3}\d{1,3}|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(:\d+)?(\/[^\s]*)?$/.test(a),
     [GuardSignal.EMAIL]: a => (
         typeof a === 'string' &&
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(a) &&
